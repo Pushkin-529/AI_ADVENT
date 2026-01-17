@@ -1,7 +1,6 @@
 import requests
 import urllib3
-from requests import Response
-from twisted.web.html import output
+
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -47,8 +46,7 @@ def get_model_answer(user_prompt):
         'Authorization': 'Api-Key ' + access_token
     }
     response = requests.post(url=url, headers=headers, json=payload, verify=False)
-    return response.json()
-    #['result']['alternatives'][0]['message']['text']
+    return response.json()['result']['alternatives'][0]['message']['text']
 
   elif query_type == "XML":
     payload = {
