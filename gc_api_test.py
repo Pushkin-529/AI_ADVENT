@@ -1,14 +1,19 @@
 import requests
 import urllib3
+from requests import Response
+
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 system_prompt = "You are a helpful assistant"
 user_prompt = {}
 model = "GigaChat-2"
 temperature = 0.5
-max_tokens = 100
+max_tokens = 500
 top_p = 1
 repetition_penalty = 1
+access_token = {}
+query_type = "JSON"
+response = {}
 
 def get_access_token():
   url = "https://ngw.devices.sberbank.ru:9443/api/v2/oauth"
@@ -43,34 +48,63 @@ def get_models(access_token):
 
 def get_model_answer(access_token,user_prompt):
   url = "https://gigachat.devices.sberbank.ru/api/v1/chat/completions"
+  if query_type == "JSON":
+    payload = {
+      "model": model,
+      "messages": [
+        {
+          "role": "system",
+          "content": system_prompt
+        },
+        {
+          "role": "user",
+          "content": user_prompt
+        }
+      ],
+      "temperature": temperature,
+      "max_tokens": max_tokens,
+      "top_p": top_p,
+      "repetition_penalty": repetition_penalty,
+      "update_interval": 0,
+      "stream": False
+    }
+    headers = {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + access_token
+    }
+    response = requests.post(url=url, headers=headers, json=payload, verify=False)
+    return response.json()['choices'][0]['message']['content']
 
-  payload = {
-    "model": model,
-    "messages": [
-      {
-        "role": "system",
-        "content": system_prompt
-      },
-      {
-        "role": "user",
-        "content": user_prompt
-      }
-    ],
-    "temperature": temperature,
-    "max_tokens": max_tokens,
-    "top_p": top_p,
-    "repetition_penalty": repetition_penalty,
-    "update_interval": 0,
-    "stream": False
-  }
-  headers = {
-    'Accept': 'application/json',
-    'Content-Type': 'application/json',
-    'Authorization': 'Bearer ' + access_token
-  }
+  elif query_type == "XML":
+    xml_data = f'''
+      <?xml version="1.0" encoding="UTF-8"?>
+        <request>
+          <input>
+            <text>{user_prompt}</text>
+          </input>
+          <params>
+            <temperature>{temperature}</temperature>
+            <max_tokens>{max_tokens}</max_tokens>
+            <top_p>{top_p}</top_p>
+            <repetition_penalty>{repetition_penalty}</repetition_penalty>
+            <update_interval>0</update_interval>
+            <stream>False</stream>
+            <output_format>XML</output_format>
+            <model>{model}</model>
+          </params>
+        </request>'''
+    headers = {
+      'Accept': 'application/xml',
+      'Content-Type': 'application/xml',
+      'Authorization': 'Bearer ' + access_token
+    }
+    response = requests.post(url=url, headers=headers, data=xml_data, verify=False)
+    return response.text
 
-  response = requests.post(url=url, headers=headers, json=payload,verify=False)
-  return response.json()['choices'][0]['message']['content']
+  else:
+    return ""
+
 
 def colored_text(text, color_code):
   return f"\033[{color_code}m{text}\033[0m"
@@ -78,7 +112,7 @@ def colored_text(text, color_code):
 models = get_models(get_access_token())
 print(colored_text(text="Access token obtained! Get model list:", color_code=32))
 print(colored_text(text=models,color_code=32))
-print(colored_text(text="Краткая справка по командам: 1-изменение модели, 2-изменение системного промпта, 3-изменение температуры, 4-изменение top_p, 5-изменение repetition_penalty, 6-изменение max_tokens", color_code=32))
+print(colored_text(text="Краткая справка по командам: 1-изменение модели, 2-изменение системного промпта, 3-изменение температуры, 4-изменение top_p, 5-изменение repetition_penalty, 6-изменение max_tokens, 7-изменение query_type", color_code=32))
 text = {}
 while True:
   text = input(colored_text(text="Введите текст запроса к модели: ", color_code=32))
@@ -88,14 +122,23 @@ while True:
     model = input(colored_text(text="Введите название модели: ", color_code=32))
   if text == "2":
     system_prompt = input(colored_text(text="System prompt: ", color_code=32))
+    continue
   if text == "3":
     temperature = input(colored_text(text="Enter temperature: ", color_code=32))
+    continue
   if text == "4":
     top_p = input(colored_text(text="Enter top_p: ", color_code=32))
+    continue
   if text == "5":
     repetition_penalty = input(colored_text(text="Enter repetition_penalty: ", color_code=32))
+    continue
   if text == "6":
     max_tokens = input(colored_text(text="Enter max_tokens: ", color_code=32))
+    continue
+  if text == "7":
+    query_type = input(colored_text(text="Enter query_type: ", color_code=32))
+    print(colored_text(text="Query type: ", color_code=31) + colored_text(text=query_type, color_code=31))
+    continue
   text = get_model_answer(access_token=get_access_token(), user_prompt=text)
   print(colored_text(text="Ответ модели: ", color_code=32) + colored_text(text=text, color_code=33))
 
