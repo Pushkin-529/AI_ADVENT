@@ -46,7 +46,8 @@ def get_model_answer(user_prompt):
         'Authorization': 'Api-Key ' + access_token
     }
     response = requests.post(url=url, headers=headers, json=payload, verify=False)
-    return response.json()['result']['alternatives'][0]['message']['text']
+#    return response.json()['result']['alternatives'][0]['message']['text']
+    return response
 
   elif query_type == "XML":
     payload = {
@@ -100,27 +101,6 @@ def get_model_answer(user_prompt):
       </result>
     </root>
     '''
-#    xml_output = f'''<?xml version="1.0" encoding="UTF-8"?>
-#      <response>
-#          <result>
-#              <alternatives>
-#                <message>
-#                  <role>{result["result"]["alternatives"][0]["message"]["role"]}</role>
-#                  <text>{result["result"]["alternatives"][0]["message"]["text"]}</text>
-#                </message>
-#                <status>{result["result"]["alternatives"][0]["status"]}</status>
-#              </alternatives>
-#              <usage>
-#                <input_tokens>{result["result"]["usage"]["input_tokens"]}</input_tokens>
-#                <completion_tokens>{result["result"]["usage"]["completion_tokens"]}</output_tokens>
-#                <total_tokens>{result["result"]["usage"]["total_tokens"]}</total_tokens>
-#                <completionTokensDetails>
-#                  <reasoningTokens>{result["result"]["usage"]["completionTokensDetails"]["reasoningTokens"]}</reasoningTokens>
-#                </completionTokensDetails>
-#              </usage>
-#              <modelVerion>{result["result"]["modelVersion"]}</modelVerion>
-#          </result>
-#$      </response>'''
     return xml_output
 
   else:
@@ -161,7 +141,10 @@ while True:
     print(colored_text(text="Query type: ", color_code=31) + colored_text(text=query_type, color_code=31))
     continue
   text = get_model_answer(user_prompt=text)
-  print(colored_text(text="Ответ модели: ", color_code=32) + colored_text(text=text, color_code=33))
+  print(colored_text(text="Ответ модели: ", color_code=32) + colored_text(text=text.json()['result']['alternatives'][0]['message']['text'], color_code=33))
+  print(colored_text(text="Токенов в запросе:", color_code=31) + colored_text(text=(text.json()["result"]["usage"]["inputTextTokens"]), color_code=31) + colored_text(text=", Токенов в ответе:", color_code=31)+colored_text(text=(text.json()["result"]["usage"]["completionTokens"]), color_code=31)+colored_text(text=", Всего:", color_code=31)+colored_text(text=(text.json()["result"]["usage"]["totalTokens"]), color_code=31)+colored_text(text=", Max tokens:", color_code=31)+colored_text(text=max_tokens, color_code=31))
+
+
 
 
 print(colored_text("Спасибо за использование!", "31"))
